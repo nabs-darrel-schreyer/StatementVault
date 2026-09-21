@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>StatementVault.Infra</RootNamespace>
+    <AssemblyName>StatementVault.Infra</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.CDK.Lib" />
+  </ItemGroup>
+</Project>

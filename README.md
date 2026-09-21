@@ -11,8 +11,9 @@ This is a teaching repo, not a product. The code is deliberately small. A real i
 | Runtime | **.NET 10** (`net10.0`) — same TFM the current Aspire AppHost templates use |
 | Aspire | **13.5.4** (`Aspire.AppHost.Sdk`) |
 | AWS SDK | **AWSSDK.S3 / AWSSDK.DynamoDBv2 4.x** with `IOptions` and the default credential chain |
-| Local AWS | LocalStack 4.8 container from the AppHost (not CDK) |
-| IaC | Terraform under `infra/` (S3, DynamoDB, EC2, instance profile) |
+| Local AWS | LocalStack 4.8 container from the AppHost (not real AWS) |
+| IaC (primary) | **CDK.NET** in `src/StatementVault.Infra` (`Amazon.CDK.Lib` 2.270.0) |
+| IaC (comparison) | Terraform under `infra/` — same footprint, kept for side-by-side review |
 
 Pinned SDK: see `global.json`. Package versions: `Directory.Packages.props`.
 
@@ -31,7 +32,7 @@ flowchart TB
   Persistence --> Bucket
 ```
 
-Locally, Aspire starts LocalStack and the API. On AWS, Terraform creates the bucket, table, and an Amazon Linux 2023 host with an instance profile. The API talks to regional AWS endpoints and picks up credentials from the instance profile. No access keys are stored in code or Terraform.
+Locally, Aspire starts LocalStack and the API. On AWS, **CDK.NET** is the primary deploy path: it creates the bucket, table, and an Amazon Linux 2023 host with an instance profile. Terraform under `infra/` is the alternate/comparison implementation of the same footprint. The API talks to regional AWS endpoints and picks up credentials from the instance profile. No access keys are stored in code or IaC.
 
 ### Vertical slices
 
@@ -67,7 +68,8 @@ List uses `Query` on `PK` + `begins_with(SK, STATEMENT#)`, with `ExclusiveStartK
 - .NET SDK 10 (`dotnet --list-sdks`)
 - Docker (Aspire + LocalStack)
 - Optional: [Aspire CLI](https://get.aspire.dev) for the dashboard. `dotnet build` does not require it (`AspireUseCliBundle` is false so CI/agents without the CLI still compile).
-- Optional: Terraform >= 1.6 and an AWS account for `infra/`
+- Optional (real AWS): Node.js 18+ and the [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/getting-started.html) (`npm i -g aws-cdk` or `npx aws-cdk`), plus the default AWS credential chain (`aws sts get-caller-identity`)
+- Optional (comparison IaC only): Terraform >= 1.6
 
 ## Local run (Aspire + LocalStack)
 
@@ -111,7 +113,7 @@ The AppHost HTTP port is shown in the Aspire dashboard. Running the API project 
 | --- | --- | --- |
 | `Aws:ServiceUrl` | LocalStack edge URL | empty |
 | `Aws:ForcePathStyle` | `true` | `false` |
-| `Aws:CreateResources` | `true` | `false` (Terraform owns resources) |
+| `Aws:CreateResources` | `true` | `false` (CDK owns resources; Terraform is the comparison path) |
 | Credentials | env `test`/`test` for LocalStack | instance profile / default chain |
 
 To point the AppHost at a real account (still no keys in source):
@@ -137,9 +139,77 @@ Section `Aws` (`IOptions<AwsOptions>`):
 
 Environment variables use the usual `__` form, e.g. `Aws__BucketName`.
 
-On EC2 the Terraform `user_data` writes `/etc/statementvault.env` with region, bucket, and table. The SDK uses the instance profile. There are no hardcoded secrets.
+On EC2 the CDK (or Terraform) `user_data` writes `/etc/statementvault.env` with region, bucket, and table. The SDK uses the instance profile. There are no hardcoded secrets.
 
-## Terraform
+## Deploy to AWS (CDK.NET, primary)
+
+Prereqs: .NET 10 SDK, Node.js 18+, AWS CDK CLI, and the **default credential chain** (environment, shared profile, or SSO). Do not put access keys in the repo.
+
+```bash
+# From the repository root
+dotnet build src/StatementVault.Infra/StatementVault.Infra.csproj
+
+# Synthesize CloudFormation (no account required)
+dotnet run --project src/StatementVault.Infra
+# equivalent:
+npx aws-cdk synth
+
+# First account/region only
+npx aws-cdk bootstrap aws://ACCOUNT/REGION
+
+# Deploy (uses CDK_DEFAULT_ACCOUNT / CDK_DEFAULT_REGION from your AWS environment)
+npx aws-cdk deploy
+# lock the API to your IP:
+npx aws-cdk deploy -c allowedCidr=203.0.113.10/32 -c env=dev
+# after you push an image to ECR:
+npx aws-cdk deploy -c apiImage=ACCOUNT.dkr.ecr.REGION.amazonaws.com/statementvault-api:tag
+```
+
+Context knobs (also in `cdk.json`): `env`, `project`, `allowedCidr`, `instanceType`, `apiPort`, `apiImage`.
+
+```mermaid
+flowchart TB
+  Cdk["CDK.NET src/StatementVault.Infra"]
+  Ec2["EC2 Amazon Linux 2023"]
+  Role["IAM instance profile"]
+  Api["StatementVault.Api"]
+  Bucket["S3 bucket"]
+  Table["DynamoDB table"]
+
+  Cdk --> Ec2
+  Cdk --> Role
+  Cdk --> Bucket
+  Cdk --> Table
+  Role --> Ec2
+  Ec2 --> Api
+  Api -->|"instance profile"| Bucket
+  Api -->|"instance profile"| Table
+```
+
+Creates the same intended footprint as Terraform:
+
+- Encrypted S3 bucket, public access blocked, bucket-owner-enforced
+- DynamoDB table `PAY_PER_REQUEST` with `PK` / `SK`
+- Amazon Linux 2023 EC2 instance, encrypted root volume, IMDSv2 required
+- Instance profile with **Get/Put object**, **ListBucket**, and **GetItem/PutItem/Query** only
+- Security group ingress on `apiPort` from `allowedCidr`
+
+Outputs: `BucketName`, `TableName`, `InstancePublicDns`, `InstancePublicIp`, `InstanceRoleArn`, `ApiBaseUrl`.
+
+CDK creates a small **public-only VPC** (no NAT) so `cdk synth` does not need an account VPC lookup. Terraform’s comparison stack uses the account default VPC instead. Data plane and IAM match.
+
+`user_data` installs Docker. If `apiImage` is empty, it writes `/home/ec2-user/STATEMENTVAULT.md` with publish instructions. If you pass an image, it pulls and runs it with the env file.
+
+```bash
+docker build -f src/StatementVault.Api/Dockerfile -t statementvault-api .
+# push to ECR, then cdk deploy -c apiImage=...
+```
+
+Destroy with `npx aws-cdk destroy`. The bucket is retained (`RemovalPolicy.RETAIN`) and must be emptied separately.
+
+## Terraform (comparison / alternate IaC)
+
+`infra/` is kept so you can compare HCL with the CDK stack. It is **not** the primary deploy path. Do not apply both to the same account/env or you will fight over bucket and role names.
 
 ```bash
 cd infra
@@ -151,7 +221,7 @@ terraform apply
 
 ```mermaid
 flowchart TB
-  Tf["Terraform infra/"]
+  Tf["Terraform infra/ comparison"]
   Ec2["EC2 Amazon Linux 2023"]
   Role["IAM instance profile"]
   Api["StatementVault.Api"]
@@ -194,14 +264,15 @@ Destroy with `terraform destroy`. The bucket must be empty first.
 dotnet test StatementVault.slnx
 ```
 
-`global.json` opts `dotnet test` into Microsoft.Testing.Platform (required for xUnit v3 on the .NET 10 SDK). API tests use `WebApplicationFactory` and in-memory fakes (no LocalStack required). There are also validator and key-convention unit tests.
+`global.json` opts `dotnet test` into Microsoft.Testing.Platform (required for xUnit v3 on the .NET 10 SDK). API tests use `WebApplicationFactory` and in-memory fakes (no LocalStack required). `StatementVault.Infra.Tests` uses `Amazon.CDK.Assertions` for bucket encryption, public-access block, and IAM actions.
 
 ## Design choices
 
 - **Vertical slices over layers of controllers.** Each use case is a folder with the endpoint (and a validator where it matters).
 - **Thin domain.** No aggregates, no domain events. Keys and ports only.
 - **Adapters, not a generic AWS wrapper.** One DynamoDB repository, one S3 store.
-- **Default credential chain.** `new AmazonS3Client(config)` / `new AmazonDynamoDBClient(config)`. LocalStack dummy keys are injected as environment variables by Aspire, not compiled in.
+- **Default credential chain.** `new AmazonS3Client(config)` / `new AmazonDynamoDBClient(config)`, and CDK deploy uses the same chain. LocalStack dummy keys are injected as environment variables by Aspire, not compiled in.
+- **CDK.NET is the primary AWS deploy path.** Terraform in `infra/` is a comparison implementation of the same S3 / DynamoDB / EC2 / IAM footprint.
 - **Correlation id middleware** (`X-Correlation-ID`) plus ProblemDetails. Structured logs/OTel via Aspire (`OTEL_EXPORTER_OTLP_ENDPOINT` when the dashboard is up).
 - **FluentValidation** on upload. `CancellationToken` on every I/O path.
 - **No auth in this sample.** A bank API would sit behind Cognito/OIDC or an internal gateway. Skipping it keeps the AWS/data path readable.

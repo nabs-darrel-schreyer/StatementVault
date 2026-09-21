@@ -4,6 +4,7 @@
 **/obj
 **/.terraform
 **/*.tfstate
+**/cdk.out
 **/TestResults
 **/artifacts
 README.md

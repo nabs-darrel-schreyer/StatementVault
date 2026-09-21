@@ -41,6 +41,10 @@ PublishScripts/
 # Aspire / user secrets leftovers
 **/appsettings.*.local.json
 
+# AWS CDK
+cdk.out/
+cdk.context.json
+
 # Terraform
 **/.terraform/
 *.tfstate

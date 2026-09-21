@@ -1,0 +1,22 @@
+{
+  "app": "dotnet run --project src/StatementVault.Infra/StatementVault.Infra.csproj --no-launch-profile",
+  "watch": {
+    "include": [
+      "src/StatementVault.Infra/**"
+    ],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "obj",
+      "bin"
+    ]
+  },
+  "context": {
+    "env": "dev",
+    "project": "statementvault",
+    "allowedCidr": "0.0.0.0/0",
+    "instanceType": "t3.micro",
+    "apiPort": 8080,
+    "apiImage": ""
+  }
+}
