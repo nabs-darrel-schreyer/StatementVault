@@ -18,19 +18,17 @@ Pinned SDK: see `global.json`. Package versions: `Directory.Packages.props`.
 
 ## Architecture
 
-```
-HTTP clients
-     |
-     v
-StatementVault.Api  (Features/Statements/*)
-     |
-     v
-StatementVault.Persistence
-     |                          |
-     v                          v
-DynamoDB                     S3
-PK ACCOUNT#{accountId}       statements/{accountId}/{statementId}{ext}
-SK STATEMENT#{statementId}   SSE-S3 (AES256) on put
+```mermaid
+flowchart TB
+  Clients["HTTP clients"]
+  Api["StatementVault.Api<br/>Features/Statements"]
+  Persistence["StatementVault.Persistence"]
+  Dynamo["DynamoDB<br/>PK ACCOUNT#{accountId}<br/>SK STATEMENT#{statementId}"]
+  Bucket["S3<br/>statements/{accountId}/{statementId}{ext}<br/>SSE-S3 AES256 on put"]
+
+  Clients --> Api --> Persistence
+  Persistence --> Dynamo
+  Persistence --> Bucket
 ```
 
 Locally, Aspire starts LocalStack and the API. On AWS, Terraform creates the bucket, table, and an Amazon Linux 2023 host with an instance profile. The API talks to regional AWS endpoints and picks up credentials from the instance profile. No access keys are stored in code or Terraform.
@@ -76,6 +74,17 @@ List uses `Query` on `PK` + `begins_with(SK, STATEMENT#)`, with `ExclusiveStartK
 ```bash
 dotnet restore StatementVault.slnx
 dotnet run --project src/StatementVault.AppHost
+```
+
+```mermaid
+flowchart LR
+  AppHost["StatementVault.AppHost"]
+  LocalStack["LocalStack<br/>S3 + DynamoDB"]
+  Api["StatementVault.Api"]
+
+  AppHost --> LocalStack
+  AppHost --> Api
+  Api -->|"Aws__ServiceUrl"| LocalStack
 ```
 
 Aspire starts:
@@ -138,6 +147,25 @@ cp terraform.tfvars.example terraform.tfvars   # set allowed_cidr to your IP
 terraform init
 terraform fmt
 terraform apply
+```
+
+```mermaid
+flowchart TB
+  Tf["Terraform infra/"]
+  Ec2["EC2 Amazon Linux 2023"]
+  Role["IAM instance profile"]
+  Api["StatementVault.Api"]
+  Bucket["S3 bucket"]
+  Table["DynamoDB table"]
+
+  Tf --> Ec2
+  Tf --> Role
+  Tf --> Bucket
+  Tf --> Table
+  Role --> Ec2
+  Ec2 --> Api
+  Api -->|"instance profile"| Bucket
+  Api -->|"instance profile"| Table
 ```
 
 Creates:
