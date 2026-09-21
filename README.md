@@ -166,7 +166,7 @@ Destroy with `terraform destroy`. The bucket must be empty first.
 dotnet test StatementVault.slnx
 ```
 
-API tests use `WebApplicationFactory` and in-memory fakes (no LocalStack required). There are also validator and key-convention unit tests.
+`global.json` opts `dotnet test` into Microsoft.Testing.Platform (required for xUnit v3 on the .NET 10 SDK). API tests use `WebApplicationFactory` and in-memory fakes (no LocalStack required). There are also validator and key-convention unit tests.
 
 ## Design choices
 

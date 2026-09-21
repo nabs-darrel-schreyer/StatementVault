@@ -14,7 +14,7 @@ public sealed class StatementKeysTests
     }
 
     [Theory]
-    [InlineData("jan.pdf", "statements/acc-1/abc.pdf")]
+    [InlineData("pdf", "statements/acc-1/abc.pdf")]
     [InlineData(".PDF", "statements/acc-1/abc.pdf")]
     [InlineData(null, "statements/acc-1/abc")]
     public void ObjectKey_IncludesAccountStatementAndExtension(string? extension, string expected)
