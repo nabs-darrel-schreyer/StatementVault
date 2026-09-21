@@ -20,7 +20,7 @@ if (useLocalStack)
         .WithEnvironment("SERVICES", "s3,dynamodb")
         .WithEnvironment("DEFAULT_REGION", awsRegion)
         .WithEnvironment("EAGER_SERVICE_LOADING", "1")
-        .WithHttpHealthCheck("/_localstack/health");
+        .WithHttpHealthCheck("/_localstack/health", endpointName: "edge");
 
     api.WithEnvironment("Aws__ServiceUrl", localstack.GetEndpoint("edge"))
         .WithEnvironment("Aws__ForcePathStyle", "true")

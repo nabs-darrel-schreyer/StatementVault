@@ -1,4 +1,5 @@
 using FluentValidation;
+using Scalar.AspNetCore;
 using StatementVault.Api.Features.Statements;
 using StatementVault.Api.Features.Statements.UploadStatement;
 using StatementVault.Api.Hosting;
@@ -31,6 +32,7 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.MapDefaultEndpoints();

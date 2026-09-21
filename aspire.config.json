@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "src/StatementVault.AppHost/StatementVault.AppHost.csproj"
+  }
+}
