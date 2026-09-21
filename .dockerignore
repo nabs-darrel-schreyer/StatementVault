@@ -1,0 +1,10 @@
+**/.git
+**/.vs
+**/bin
+**/obj
+**/.terraform
+**/*.tfstate
+**/TestResults
+**/artifacts
+README.md
+infra

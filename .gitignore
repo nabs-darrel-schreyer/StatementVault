@@ -1,0 +1,73 @@
+## .NET / Visual Studio
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+.idea/
+*.userprefs
+
+# Build / test
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+[Cc]overage[Rr]eport
+[Tt]est[Rr]esults
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+*.binlog
+
+# NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+project.lock.json
+project.fragment.lock.json
+
+# Publish
+publish/
+*.pubxml
+*.publishproj
+PublishScripts/
+
+# Aspire / user secrets leftovers
+**/appsettings.*.local.json
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*~
+*.swp
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+.history/
+
+# Docker / local
+*.pfx
+.env
+.env.*
+!.env.example

@@ -1,0 +1,44 @@
+@host = http://localhost:5080
+@accountId = acc-1001
+@statementId = replace-me
+
+### Health
+GET {{host}}/health
+
+### OpenAPI
+GET {{host}}/openapi/v1.json
+
+### Upload a statement (multipart)
+POST {{host}}/api/statements
+X-Correlation-ID: local-dev-001
+Content-Type: multipart/form-data; boundary=----StatementVault
+------StatementVault
+Content-Disposition: form-data; name="accountId"
+
+{{accountId}}
+------StatementVault
+Content-Disposition: form-data; name="periodStart"
+
+2026-01-01
+------StatementVault
+Content-Disposition: form-data; name="periodEnd"
+
+2026-01-31
+------StatementVault
+Content-Disposition: form-data; name="file"; filename="jan-2026.pdf"
+Content-Type: application/pdf
+
+< ./jan-2026.pdf
+------StatementVault--
+
+### List statements for an account
+GET {{host}}/api/statements/{{accountId}}?limit=25
+
+### Get statement metadata
+GET {{host}}/api/statements/{{accountId}}/{{statementId}}
+
+### Download statement bytes
+GET {{host}}/api/statements/{{accountId}}/{{statementId}}/content
+
+### Presigned URL
+GET {{host}}/api/statements/{{accountId}}/{{statementId}}/content?mode=url
