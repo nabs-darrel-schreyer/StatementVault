@@ -1,0 +1,11 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.5.4">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>a6f1c8d2-4e3b-4a91-9c77-2f8b0d1e4c55</UserSecretsId>
+    <AspireUseCliBundle>false</AspireUseCliBundle>
+    <NoWarn>$(NoWarn);ASPIRE010</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\StatementVault.Api\StatementVault.Api.csproj" />
+  </ItemGroup>
+</Project>

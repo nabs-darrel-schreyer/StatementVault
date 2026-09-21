@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/StatementVault.AppHost/StatementVault.AppHost.csproj" />
+    <Project Path="src/StatementVault.Api/StatementVault.Api.csproj" />
+    <Project Path="src/StatementVault.Domain/StatementVault.Domain.csproj" />
+    <Project Path="src/StatementVault.Persistence/StatementVault.Persistence.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StatementVault.Api.Tests/StatementVault.Api.Tests.csproj" />
+  </Folder>
+</Solution>
