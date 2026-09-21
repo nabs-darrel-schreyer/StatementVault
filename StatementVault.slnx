@@ -4,8 +4,10 @@
     <Project Path="src/StatementVault.Api/StatementVault.Api.csproj" />
     <Project Path="src/StatementVault.Domain/StatementVault.Domain.csproj" />
     <Project Path="src/StatementVault.Persistence/StatementVault.Persistence.csproj" />
+    <Project Path="src/StatementVault.Infra/StatementVault.Infra.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/StatementVault.Api.Tests/StatementVault.Api.Tests.csproj" />
+    <Project Path="tests/StatementVault.Infra.Tests/StatementVault.Infra.Tests.csproj" />
   </Folder>
 </Solution>

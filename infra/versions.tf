@@ -1,3 +1,5 @@
+# Alternate / comparison IaC. Primary AWS deploy path is CDK.NET:
+# src/StatementVault.Infra (see README).
 terraform {
   required_version = ">= 1.6.0"
 
