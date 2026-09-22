@@ -34,6 +34,20 @@ flowchart TB
 
 Locally, Aspire starts LocalStack and the API. On AWS, **CDK.NET** is the primary deploy path: it creates the bucket, table, and an Amazon Linux 2023 host with an instance profile. Terraform under `infra/` is the alternate/comparison implementation of the same footprint. The API talks to regional AWS endpoints and picks up credentials from the instance profile. No access keys are stored in code or IaC.
 
+The flowchart above is the **implemented** API-only sample. The diagrams below are a separate [C4](https://c4model.com/) design view: they show the intended shape of the system, including pieces this repo does not ship.
+
+### C4 design view
+
+This teaching repo uses C4 so the design approach is visible at two zoom levels. The **sample code is API-only** today (`StatementVault.Api` plus persistence). The Container diagram **intentionally includes a SPA and static content** so you can see how the same system would look if a UI were added. That UI is a design showcase, not an implemented front end.
+
+**Context** — people, the StatementVault system, and the external AWS stores. A Bank Operations user works with StatementVault. StatementVault stores statement files in Amazon S3 and statement metadata in Amazon DynamoDB.
+
+![C4 Context — StatementVault](docs/c4/c4-context-statementvault.svg)
+
+**Container** — zoom into StatementVault. Static content is served from S3 through CloudFront. A React UI talks to the StatementVault API (ASP.NET on EC2). The API writes statement files to Amazon S3 and metadata to Amazon DynamoDB. The React UI and the static-content container are part of the design picture only; the code in this repo is the API.
+
+![C4 Container — StatementVault](docs/c4/c4-container-statementvault.svg)
+
 ### Vertical slices
 
 Use cases live under `src/StatementVault.Api/Features/`, not in a shared controller layer:
